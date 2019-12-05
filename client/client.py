@@ -54,7 +54,6 @@ def main():
     get("randomkey", url + "get")
     post("randomkey", "randomvalue", url + "post")
     delete("randomkey", url + "delete")
-    pass
 # -----------------------------------------------------------------------------|
 
 
