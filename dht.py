@@ -34,14 +34,18 @@ def get():
     key = request.args.get('key')
     nodes = c.find_nodes_for_key(key)
     responses = [requests.get(node + "/get-key", {'key': key}).text for node in nodes]
-    return statistics.mode(responses)
+    mode = statistics.mode(responses)
+    return mode if mode else ("Key not found", 406)
 
 @app.route('/insert', methods=['POST'])
 def insert():
     key_value = request.get_json()
     quorum_nodes = c.find_nodes_for_key(key_value['key'])
     for node in quorum_nodes:
-        requests.post(node + "/insert-key-value", json = key_value)
+        r = requests.post(node + "/insert-key-value", json = key_value)
+        if not r.ok:
+            return r
+    return "Insert successful"
 # -----------------------------------------------------------------------------|
 
 
@@ -70,6 +74,7 @@ def insert():
     key_value = request.get_json()
     key, value = key_value['key'], key_value['value']
     n.put(key, value)
+    return "Insert successful"
 # -----------------------------------------------------------------------------|
 
 

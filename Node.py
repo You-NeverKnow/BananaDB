@@ -16,9 +16,8 @@ class Node:
         self.store = self.build_store()
 
         # Redo-logs
-        self.log = Path("./logs") / str(time())
-        self.log_size = 0
         self.max_log_size = 100
+        self.init_log_file()
 
     def __repr__(self):
         return self.hostname + ' |\n' + str(self.store)
@@ -38,6 +37,17 @@ class Node:
         key_values = key_values[:-1] + '}'
         return json.loads(key_values)
 
+    def init_log_file(self):
+        self.log = Path("./logs") / str(time())
+        with open(self.log, "w") as f:
+            f.write("{")
+        self.log_size = 0
+
+    def get(self, k):
+        if k not in self.store:
+            return None
+        return self.store[k]
+
     def put(self, k, v):
         with open(self.log, "a") as f:
             f.write(f"{k}:{v},")
@@ -45,12 +55,6 @@ class Node:
 
         # Swap out log files
         if self.log_size == self.max_log_size:
-            self.log = Path("./logs") / str(time())
-            self.log_size = 0
-
-    def get(self, k):
-        if k not in self.store:
-            return None
-        return self.store[k]
+            self.init_log_file()
 # -----------------------------------------------------------------------------|
 
