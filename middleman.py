@@ -9,7 +9,7 @@ url = ""
 @app.route('/leader', methods=['POST'])
 def update_leader():
     global url
-    url = request.form['leader']
+    url = request.get_json()['leader']
 # -----------------------------------------------------------------------------|
 
 # -----------------------------------------------------------------------------|
@@ -18,17 +18,14 @@ def update_leader():
 @app.route('/get')
 def get():
     assert url != ""
-    r = requests.get(url + ":5000/get", params = {'key': request.args.get('key')})
+    r = requests.get(url + "/get", params = {'key': request.args.get('key')})
     return r.text
 
 @app.route('/insert', methods=['POST'])
 def insert():
     assert url != ""
-    data = {
-        "key": request.form['key'],
-        "value": request.form['value']
-    }
-    requests.post(url + ":5000/insert", json = data)
+    r = requests.post(url + ":5000/insert", json = request.get_json())
+    return r.text
 # -----------------------------------------------------------------------------|
 
 if __name__ == '__main__':
