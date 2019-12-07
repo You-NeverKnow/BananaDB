@@ -1,14 +1,15 @@
 import statistics
-
 import requests
 from flask import Flask, jsonify, request
 from HashRing import ConsistentHashRing
 from Node import Node
 
+# -----------------------------------------------------------------------------|
+# Init
+# -----------------------------------------------------------------------------|
 app = Flask(__name__)
 c = ConsistentHashRing()
 n = None
-
 
 # -----------------------------------------------------------------------------|
 # Listen to new ring additions

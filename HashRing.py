@@ -1,6 +1,5 @@
 from Node import md5_hash
 
-
 # -----------------------------------------------------------------------------|
 class ConsistentHashRing:
     def __init__(self):
