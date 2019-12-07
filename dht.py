@@ -32,7 +32,7 @@ def get_nodes():
 def get():
     key = request.args.get('key')
     nodes = c.find_nodes_for_key(key)
-    responses = [requests.get(node + "/get", {'key': key}).text for node in nodes]
+    responses = [requests.get(node + "/get-key", {'key': key}).text for node in nodes]
     return statistics.mode(responses)
 
 @app.route('/insert', methods=['POST'])
@@ -40,7 +40,7 @@ def insert():
     key_value = request.get_json()
     quorum_nodes = c.find_nodes_for_key(key_value['key'])
     for node in quorum_nodes:
-        requests.post(node + "/insert", json = key_value)
+        requests.post(node + "/insert-key-value", json = key_value)
 # -----------------------------------------------------------------------------|
 
 
