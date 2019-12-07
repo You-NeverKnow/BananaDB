@@ -28,7 +28,7 @@ def insert():
         "key": request.args.get('key'),
         "value": request.args.get('value')
     }
-    requests.post(url + ":5000/post", json = data)
+    requests.post(url + ":5000/insert", json = data)
 # -----------------------------------------------------------------------------|
 
 if __name__ == '__main__':
