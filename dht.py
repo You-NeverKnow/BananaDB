@@ -8,14 +8,6 @@ from Node import Node
 app = Flask(__name__)
 c = ConsistentHashRing()
 n = None
-# c.add_node('n1')
-# c.add_node('n2')
-# c.add_node('n3')
-
-
-# @app.route("/get-node/<string:key>/")
-# def get_node_for_key(key):
-#     return jsonify({'node': c.find_node_for_key(key)})
 
 
 # -----------------------------------------------------------------------------|
@@ -23,12 +15,9 @@ n = None
 # -----------------------------------------------------------------------------|
 @app.route("/add-node/", methods=['POST'])
 def add_node():
-    # try:
     node = request.args.get('name')
     c.add_node(node)
     requests.post(node + ":5000/init", json = {'name': node})
-    # except:
-    #     print('Already exists')
 
 @app.route("/get-nodes/")
 def get_nodes():
@@ -43,15 +32,15 @@ def get_nodes():
 def get():
     key = request.args.get('key')
     nodes = c.find_nodes_for_key(key)
-    responses = [requests.get(node + ":5000/get", {'key': key}).text for node in nodes]
+    responses = [requests.get(node + "/get", {'key': key}).text for node in nodes]
     return statistics.mode(responses)
 
 @app.route('/insert', methods=['POST'])
 def insert():
-    key, value = request.form['key'], request.form['value']
-    nodes = c.find_nodes_for_key(key)
-    for node in nodes:
-        requests.post(node + ":5000/insert", {'key': key, 'value': value})
+    key_value = request.get_json()
+    quorum_nodes = c.find_nodes_for_key(key_value['key'])
+    for node in quorum_nodes:
+        requests.post(node + "/insert", json = key_value)
 # -----------------------------------------------------------------------------|
 
 
@@ -61,9 +50,10 @@ def insert():
 @app.route('/init', methods=['POST'])
 def init():
     global n
-    hostname, leader = request.form['name'], request.form['leader']
+    init_json = request.get_json()
+    hostname, leader = init_json['name'], init_json['leader']
     n = Node(hostname, leader)
-    r = requests.get(leader + ":5000/get-nodes")
+    r = requests.get(leader + "/get-nodes")
     c.ring = r.json()
 
 @app.route('/get-key')
@@ -76,7 +66,8 @@ def get():
 def insert():
     global n
     assert n is not None
-    key, value = request.form['key'], request.form['value']
+    key_value = request.get_json()
+    key, value = key_value['key'], key_value['value']
     n.add(key, value)
 # -----------------------------------------------------------------------------|
 
