@@ -35,7 +35,7 @@ def get():
     nodes = c.find_nodes_for_key(key)
     responses = [requests.get(node + "/get-key", {'key': key}).text for node in nodes]
     mode = statistics.mode(responses)
-    return mode if mode else ("Key not found", 406)
+    return mode if mode is not None else ("Key not found", 406)
 
 @app.route('/insert', methods=['POST'])
 def insert():
@@ -60,6 +60,7 @@ def init():
     n = Node(hostname, leader)
     r = requests.get(leader + "/get-nodes")
     c.ring = r.json()
+    return f"Initialized {hostname}"
 
 @app.route('/get-key')
 def get():
