@@ -68,7 +68,7 @@ def insert():
     assert n is not None
     key_value = request.get_json()
     key, value = key_value['key'], key_value['value']
-    n.add(key, value)
+    n.put(key, value)
 # -----------------------------------------------------------------------------|
 
 
