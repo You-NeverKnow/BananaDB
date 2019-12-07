@@ -25,8 +25,8 @@ def get():
 def insert():
     assert url != ""
     data = {
-        "key": request.args.get('key'),
-        "value": request.args.get('value')
+        "key": request.form['key'],
+        "value": request.form['value']
     }
     requests.post(url + ":5000/insert", json = data)
 # -----------------------------------------------------------------------------|
