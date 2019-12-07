@@ -24,7 +24,7 @@ def get():
 @app.route('/insert', methods=['POST'])
 def insert():
     assert url != ""
-    r = requests.post(url + ":5000/insert", json = request.get_json())
+    r = requests.post(url + "/insert", json = request.get_json())
     return r.text
 # -----------------------------------------------------------------------------|
 
