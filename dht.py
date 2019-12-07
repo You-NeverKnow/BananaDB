@@ -17,7 +17,7 @@ n = None
 def add_node():
     node = request.args.get('name')
     c.add_node(node)
-    requests.post(node + ":5000/init", json = {'name': node})
+    requests.post(node + "/init", json = {'name': node})
 
 @app.route("/get-nodes/")
 def get_nodes():
