@@ -15,12 +15,26 @@ n = None
 # -----------------------------------------------------------------------------|
 # Listen to new ring additions
 # -----------------------------------------------------------------------------|
+@app.route("/add-node-leader", methods=['POST'])
+def add_node_leader():
+    node = request.get_json()['name']
+    c.add_node(node)
+
+    # Update everyone's ring
+    for ring_node in c.ring:
+        r = requests.post(ring_node + "/add-node", json = {'name': node})
+        if not r.ok:
+            return r.text
+
+    # Init the node <- will cause bugs if node goes down before initialized
+    r = requests.post(node + "/init", json = {'name': node, 'leader': n.hostname})
+    return r.text
+
 @app.route("/add-node", methods=['POST'])
 def add_node():
     node = request.get_json()['name']
     c.add_node(node)
-    r = requests.post(node + "/init", json = {'name': node, 'leader': n.hostname})
-    return r.text
+    return "Added new node"
 
 @app.route("/get-nodes")
 def get_nodes():
@@ -31,6 +45,14 @@ def get_nodes():
 # -----------------------------------------------------------------------------|
 # Leader only code -- Hash key and forward request
 # -----------------------------------------------------------------------------|
+@app.route('/init-self', methods=['POST'])
+def init_self():
+    global n
+    hostname = request.get_json()['name']
+    n = Node(hostname, hostname)
+    c.ring = [hostname]
+    return f"Initialized self:{hostname}"
+
 @app.route('/get')
 def get():
     key = request.args.get('key')
@@ -53,14 +75,6 @@ def insert():
 # -----------------------------------------------------------------------------|
 # Node only code -- Provide access to the in-memory key-value store
 # -----------------------------------------------------------------------------|
-@app.route('/init-self', methods=['POST'])
-def init_self():
-    global n
-    hostname = request.get_json()['name']
-    n = Node(hostname, hostname)
-    c.ring = [hostname]
-    return f"Initialized self:{hostname}"
-
 @app.route('/init', methods=['POST'])
 def init():
     global n
@@ -90,4 +104,4 @@ def insert_key():
 
 
 if __name__ == "__main__":
-    app.run(debug = True, port = int(sys.argv[1]))
+    app.run(port = int(sys.argv[1]))
