@@ -1,4 +1,4 @@
-import json
+import ast
 import hashlib
 from time import time
 from pathlib import Path
@@ -27,15 +27,18 @@ class Node:
         for log_file in Path('./logs').iterdir():
             if log_file.is_dir():
                 continue
-            store = {**store, **self.parse_log(log_file)}
+            store.update(**self.parse_log(log_file))
         return store
 
     @staticmethod
     def parse_log(file):
         with open(file) as f:
             key_values = f.read()
-        key_values = key_values[:-1] + '}'
-        return json.loads(key_values)
+        try:
+            key_values = key_values[:-1] + '}'
+            return ast.literal_eval(key_values)
+        except SyntaxError:
+            return {}
 
     def init_log_file(self):
         self.log = Path("./logs") / str(time())
@@ -50,11 +53,10 @@ class Node:
 
     def put(self, k, v):
         with open(self.log, "a") as f:
-            f.write(f"{k}:{v},")
+            f.write(f'"{k}":"{v}",')
         self.store[k] = v
 
         # Swap out log files
         if self.log_size == self.max_log_size:
             self.init_log_file()
 # -----------------------------------------------------------------------------|
-

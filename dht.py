@@ -3,6 +3,7 @@ import requests
 from flask import Flask, jsonify, request
 from HashRing import ConsistentHashRing
 from Node import Node
+import sys
 
 # -----------------------------------------------------------------------------|
 # Init
@@ -18,7 +19,8 @@ n = None
 def add_node():
     node = request.args.get('name')
     c.add_node(node)
-    requests.post(node + "/init", json = {'name': node})
+    r = requests.post(node + "/init", json = {'name': node})
+    return r.text
 
 @app.route("/get-nodes/")
 def get_nodes():
@@ -80,4 +82,4 @@ def insert():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()
