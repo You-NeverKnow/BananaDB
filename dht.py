@@ -53,6 +53,14 @@ def insert():
 # -----------------------------------------------------------------------------|
 # Node only code -- Provide access to the in-memory key-value store
 # -----------------------------------------------------------------------------|
+@app.route('/init-self', methods=['POST'])
+def init_self():
+    global n
+    hostname = request.get_json()['name']
+    n = Node(hostname, hostname)
+    c.ring = [hostname]
+    return f"Initialized self:{hostname}"
+
 @app.route('/init', methods=['POST'])
 def init():
     global n
