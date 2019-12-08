@@ -60,6 +60,14 @@ def add_node_leader(url):
     r = requests.post(leader + "/add-node-leader", json = { "name": url})
     print("Add response:::", r.text)
 
+def insert():
+    r = requests.post(leader + "/insert", json = { "key": "this-key", "value": "self-value"})
+    assert r.text == "Insert successful"
+
+def get():
+    r = requests.get(leader + "/get", params = { "key": "this-key"})
+    assert r.text == "self-value"
+
 # @app.route('/get-key')
 # def get_key():
 #     global n
@@ -81,12 +89,15 @@ def add_node_leader(url):
 def main():
     """
     """
-    init_self()
-    url = "http://localhost:7000"
-
-    add_node_leader(url)
-    get_nodes(url)
-    get_nodes(leader)
+    # init_self()
+    # url = "http://localhost:7000"
+    # add_node_leader(url)
+    #
+    # url = "http://localhost:8000"
+    # add_node_leader(url)
+    #
+    # insert()
+    get()
 # -----------------------------------------------------------------------------|
 
 
