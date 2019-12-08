@@ -18,8 +18,6 @@ n = None
 @app.route("/add-node-leader", methods=['POST'])
 def add_node_leader():
     node = request.get_json()['name']
-    c.add_node(node)
-
     # Update everyone's ring
     for ring_node in c.ring:
         r = requests.post(ring_node + "/add-node", json = {'name': node})
