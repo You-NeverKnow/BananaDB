@@ -8,8 +8,8 @@ from Node import Node
 # Init
 # -----------------------------------------------------------------------------|
 app = Flask(__name__)
-c = ConsistentHashRing()
-n = None
+hash_ring = ConsistentHashRing()
+this_node = None
 
 # -----------------------------------------------------------------------------|
 # Listen to new ring additions
@@ -18,24 +18,24 @@ n = None
 def add_node_leader():
     node = request.get_json()['name']
     # Update everyone's ring
-    for ring_node in c.ring:
+    for ring_node in hash_ring.ring:
         r = requests.post(ring_node + "/add-node", json = {'name': node})
         if not r.ok:
             return r.text
 
     # Init the node <- will cause bugs if node goes down before initialized
-    r = requests.post(node + "/init", json = {'name': node, 'leader': n.hostname})
+    r = requests.post(node + "/init", json = {'name': node, 'leader': this_node.hostname })
     return r.text
 
 @app.route("/add-node", methods=['POST'])
 def add_node():
     node = request.get_json()['name']
-    c.add_node(node)
+    hash_ring.add_node(node)
     return "Added new node"
 
 @app.route("/get-nodes")
 def get_nodes():
-    return jsonify(c.ring)
+    return jsonify(hash_ring.ring)
 # -----------------------------------------------------------------------------|
 
 
@@ -44,23 +44,23 @@ def get_nodes():
 # -----------------------------------------------------------------------------|
 @app.route('/init-self', methods=['POST'])
 def init_self():
-    global n
+    global this_node
     hostname = request.get_json()['name']
-    n = Node(hostname, hostname)
-    c.ring = [hostname]
+    this_node = Node(hostname, hostname)
+    hash_ring.ring = [hostname]
     return f"Initialized self:{hostname}"
 
 @app.route('/get')
 def get():
     key = request.args.get('key')
-    nodes = c.find_nodes_for_key(key)
+    nodes = hash_ring.find_nodes_for_key(key)
     responses = [requests.get(node + "/get-key", {'key': key}).text for node in nodes]
     return statistics.mode(responses)
 
 @app.route('/insert', methods=['POST'])
 def insert():
     key_value = request.get_json()
-    quorum_nodes = c.find_nodes_for_key(key_value['key'])
+    quorum_nodes = hash_ring.find_nodes_for_key(key_value['key'])
     for node in quorum_nodes:
         r = requests.post(node + "/insert-key-value", json = key_value)
         if not r.ok:
@@ -74,28 +74,28 @@ def insert():
 # -----------------------------------------------------------------------------|
 @app.route('/init', methods=['POST'])
 def init():
-    global n
+    global this_node
     init_json = request.get_json()
     hostname, leader = init_json['name'], init_json['leader']
-    n = Node(hostname, leader)
+    this_node = Node(hostname, leader)
     r = requests.get(leader + "/get-nodes")
-    c.ring = r.json()
+    hash_ring.ring = r.json()
     return f"Initialized {hostname}"
 
 @app.route('/get-key')
 def get_key():
-    global n
-    assert n is not None
-    value = n.get(request.args.get('key'))
+    global this_node
+    assert this_node is not None
+    value = this_node.get(request.args.get('key'))
     return value if value else ("Key not found", 406)
 
 @app.route('/insert-key-value', methods = ['POST'])
 def insert_key():
-    global n
-    assert n is not None
+    global this_node
+    assert this_node is not None
     key_value = request.get_json()
     key, value = key_value['key'], key_value['value']
-    n.put(key, value)
+    this_node.put(key, value)
     return "Insert successful"
 # -----------------------------------------------------------------------------|
 
