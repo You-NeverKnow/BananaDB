@@ -17,9 +17,9 @@ n = None
 # -----------------------------------------------------------------------------|
 @app.route("/add-node", methods=['POST'])
 def add_node():
-    node = request.args.get('name')
+    node = request.get_json()['name']
     c.add_node(node)
-    r = requests.post(node + "/init", json = {'name': node})
+    r = requests.post(node + "/init", json = {'name': node, 'leader': n.hostname})
     return r.text
 
 @app.route("/get-nodes")
@@ -59,9 +59,6 @@ def init_self():
     hostname = request.get_json()['name']
     n = Node(hostname, hostname)
     c.ring = [hostname]
-    # debug
-    print(f"c = {c}")
-    print(f"n = {n}")
     return f"Initialized self:{hostname}"
 
 @app.route('/init', methods=['POST'])
