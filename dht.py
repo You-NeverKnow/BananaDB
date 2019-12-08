@@ -53,6 +53,17 @@ def insert():
 # -----------------------------------------------------------------------------|
 # Node only code -- Provide access to the in-memory key-value store
 # -----------------------------------------------------------------------------|
+@app.route('/init-self', methods=['POST'])
+def init_self():
+    global n
+    hostname = request.get_json()['name']
+    n = Node(hostname, hostname)
+    c.ring = [hostname]
+    # debug
+    print(f"c = {c}")
+    print(f"n = {n}")
+    return f"Initialized self:{hostname}"
+
 @app.route('/init', methods=['POST'])
 def init():
     global n
@@ -82,4 +93,4 @@ def insert_key():
 
 
 if __name__ == "__main__":
-    app.run(port = int(sys.argv[1]))
+    app.run(debug = True, port = int(sys.argv[1]))
