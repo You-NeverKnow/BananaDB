@@ -41,7 +41,7 @@ class Node:
             return {}
 
     def init_log_file(self):
-        self.log = Path("./logs") / str(time())
+        self.log = Path("./logs") / ("redo" + str(time()))
         with open(self.log, "w") as f:
             f.write("{")
         self.log_size = 0
