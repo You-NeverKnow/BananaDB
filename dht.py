@@ -36,8 +36,7 @@ def get():
     key = request.args.get('key')
     nodes = c.find_nodes_for_key(key)
     responses = [requests.get(node + "/get-key", {'key': key}).text for node in nodes]
-    mode = statistics.mode(responses)
-    return mode if mode is not None else ("Key not found", 406)
+    return statistics.mode(responses)
 
 @app.route('/insert', methods=['POST'])
 def insert():
@@ -65,13 +64,14 @@ def init():
     return f"Initialized {hostname}"
 
 @app.route('/get-key')
-def get():
+def get_key():
     global n
     assert n is not None
-    return n.get(request.args.get('key'))
+    value = n.get(request.args.get('key'))
+    return value if value is not None else ("Key not found", 406)
 
 @app.route('/insert-key-value', methods = ['POST'])
-def insert():
+def insert_key():
     global n
     assert n is not None
     key_value = request.get_json()
@@ -82,4 +82,4 @@ def insert():
 
 
 if __name__ == "__main__":
-    app.run()
+    app.run(port = int(sys.argv[1]))
