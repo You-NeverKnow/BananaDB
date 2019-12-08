@@ -15,14 +15,14 @@ n = None
 # -----------------------------------------------------------------------------|
 # Listen to new ring additions
 # -----------------------------------------------------------------------------|
-@app.route("/add-node/", methods=['POST'])
+@app.route("/add-node", methods=['POST'])
 def add_node():
     node = request.get_json()['name']
     c.add_node(node)
     r = requests.post(node + "/init", json = {'name': node})
     return r.text
 
-@app.route("/get-nodes/")
+@app.route("/get-nodes")
 def get_nodes():
     return jsonify(c.ring)
 # -----------------------------------------------------------------------------|
