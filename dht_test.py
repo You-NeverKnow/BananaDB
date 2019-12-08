@@ -90,11 +90,21 @@ def main():
     """
     """
     # init_self()
+    # get_nodes(leader)
     # url = "http://localhost:7000"
     # add_node_leader(url)
     #
     # url = "http://localhost:8000"
     # add_node_leader(url)
+    #
+    # url = "http://localhost:9000"
+    # add_node_leader(url)
+    #
+    # get_nodes(leader)
+    # get_nodes("http://localhost:7000")
+    # get_nodes("http://localhost:8000")
+    # get_nodes("http://localhost:9000")
+    #
     #
     # insert()
     get()
