@@ -14,6 +14,9 @@ url = ""
 def update_leader():
     global url
     url = request.get_json()['leader']
+    # debug
+    print(f"url = {url}")
+    return f"Updated leader to {url}"
 # -----------------------------------------------------------------------------|
 
 # -----------------------------------------------------------------------------|
