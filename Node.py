@@ -22,7 +22,11 @@ class Node:
         self.init_log_file()
 
     def __repr__(self):
-        return self.hostname + ' |\n' + str(self.store)
+        return f"{self.hostname}\n" \
+               f"|Leader: {self.leader}\n" \
+               f"|Middleman: {self.middleman}\n" \
+               f"|term: {self.term}\n" \
+               f"|store: {self.store}"
 
     def build_store(self):
         store = {}
