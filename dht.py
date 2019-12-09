@@ -129,6 +129,8 @@ def listen_heartbeat():
         try:
             requests.get(this_node.leader + '/is-alive')
         except Exception:
+            if this_node.is_voting:
+                return
             break
 
     print(f"Leader {this_node.leader} is dead! Long live the leader! => starting election")
@@ -156,38 +158,50 @@ def start_election():
 
     # Tally votes
     vote_count = Value("i", 0)
+    requests_made = Value("i", 0)
     def add_vote(m):
         if m == old_leader:
             return
         response = requests.get(m + "/vote-me", json = payload)
         with vote_count.get_lock():
+            requests_made.value += 1
             vote_count.value += 0 if response.text == "no" else 1
+
+        # debug
+        print(f"vote_count.value = {vote_count.value}")
+
 
     pool = [Process(target = add_vote, args = (member,)) for member in members]
     for p in pool:
         p.start()
 
-    for p in pool:
-        p.join()
+    while requests_made.value != len(members)-1:
+        continue
+
+    # debug
+    print(f"Joined!")
 
     # :TODO Will need to remove inactive leader from the ring; else we would never reach consensus
     # True => This node is now leader;
-    if vote_count.value > (len(members) // 2):
+    if vote_count.value > ((len(members) - 1) // 2):
         payload = {
             "leader": this_node.hostname,
             "term": this_node.term
         }
         for member in members:
-            if member == old_leader:
+            if member == old_leader or member == this_node.hostname:
                 continue
             r = requests.post(member + "/new-leader", json = payload)
-            assert r == f"All hail the new leader: {this_node.hostname}"
+            # debug
+            print(f"r.text = {r.text}")
 
         # Update leader for middleman
         requests.post(this_node.middleman + '/leader', json = {'leader': this_node.hostname})
     # False => no consensus => re-election
     else:
-        time.sleep(random.randint(30, 100))
+        timeout = random.randint(3, 10)
+        print(f"Waiting {timeout} before re-election")
+        time.sleep(timeout)
         if not this_node.leader:
             start_election()
 # -----------------------------------------------------------------------------|
@@ -197,24 +211,29 @@ def start_election():
 # -----------------------------------------------------------------------------|
 @app.route('/vote-me')
 def vote():
-    listener.terminate()
+    this_node.is_voting = True
     payload = request.get_json()
 
     with vote_lock.get_lock():
         candidate_term = payload['candidate_term']
         if candidate_term <= this_node.term:
+            print(f"Refusing to vote {payload['candidate']}")
             return "no"
         else:
             this_node.term = candidate_term
+            print(f"I am voting for {payload['candidate']}")
+            hash_ring.ring.remove(this_node.leader)
             return "yes"
 
-@app.route('/new-leader')
+@app.route('/new-leader', methods = ['POST'])
 def make_leader():
     global listener
     payload = request.get_json()
-    this_node.leader, term = payload['leader'], payload['term']
+    this_node.leader, this_node.term = payload['leader'], payload['term']
 
     # Start listening
+    this_node.is_voting = False
+    listener.terminate()
     listener = Process(target = listen_heartbeat)
     listener.start()
 

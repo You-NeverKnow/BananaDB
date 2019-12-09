@@ -15,6 +15,7 @@ class Node:
         self.leader = leader
         self.middleman = middleman
         self.term = term
+        self.is_voting = False
 
         # Redo-logs
         self.store = self.build_store()
