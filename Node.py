@@ -10,12 +10,14 @@ def md5_hash(key: str) -> int:
 
 # -----------------------------------------------------------------------------|
 class Node:
-    def __init__(self, hostname, leader):
+    def __init__(self, hostname, leader, middleman, term):
         self.hostname = hostname
         self.leader = leader
-        self.store = self.build_store()
+        self.middleman = middleman
+        self.term = term
 
         # Redo-logs
+        self.store = self.build_store()
         self.max_log_size = 100
         self.init_log_file()
 

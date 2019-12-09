@@ -1,4 +1,6 @@
 import statistics
+import sys
+
 import requests
 from flask import Flask, jsonify, request
 from HashRing import ConsistentHashRing
@@ -10,8 +12,6 @@ from Node import Node
 app = Flask(__name__)
 hash_ring = ConsistentHashRing()
 this_node = None
-leader = ""
-middleman = ""
 
 # -----------------------------------------------------------------------------|
 # Listen to new ring additions
@@ -26,7 +26,10 @@ def add_node_leader():
             return r.text
 
     # Init the node <- will cause bugs if node goes down before initialized
-    r = requests.post(node + "/init", json = {'name': node, 'leader': this_node.hostname, 'middleman': middleman })
+    r = requests.post(node + "/init", json = {'name': node,
+                                              'leader': this_node.leader,
+                                              'middleman': this_node.middleman,
+                                              'term': this_node.term})
     return r.text
 
 @app.route("/add-node", methods=['POST'])
@@ -46,10 +49,10 @@ def get_nodes():
 # -----------------------------------------------------------------------------|
 @app.route('/init-self', methods=['POST'])
 def init_self():
-    global this_node, middleman
+    global this_node
     init_json = request.get_json()
     hostname, middleman = init_json['name'], init_json['middleman']
-    this_node = Node(hostname, hostname)
+    this_node = Node(hostname, hostname, middleman, 0)
     hash_ring.ring = [hostname]
     return f"Initialized self:{hostname}"
 
@@ -77,10 +80,11 @@ def insert():
 # -----------------------------------------------------------------------------|
 @app.route('/init', methods=['POST'])
 def init():
-    global this_node, leader, middleman
+    global this_node
     init_json = request.get_json()
-    hostname, leader, middleman = init_json['name'], init_json['leader'], init_json['middleman']
-    this_node = Node(hostname, leader)
+    hostname, leader, middleman, term = init_json['name'], init_json['leader'], \
+                                        init_json['middleman'], init_json['term']
+    this_node = Node(hostname, leader, middleman, term)
     r = requests.get(leader + "/get-nodes")
     hash_ring.ring = r.json()
     return f"Initialized {hostname}"
@@ -109,14 +113,17 @@ def insert_key():
 
 # -----------------------------------------------------------------------------|
 def listen_heartbeat():
-    global term
 
     while True:
-        time.sleep(random.randint(30, 100))
-        response = requests.get(leader + '/is-alive')
+        print(f"{this_node.leader} is alive! Glory to Arztorzka!")
+        timeout = random.randint(30, 100)
+        print(f"Timing out in {timeout}s")
+        time.sleep(timeout)
+        response = requests.get(this_node.leader + '/is-alive')
         if not response.ok:
             break
 
+    print(f"Leader {this_node.leader} is dead! Long live the leader! => starting election")
     start_election()
 # -----------------------------------------------------------------------------|
 
@@ -124,21 +131,18 @@ import time
 import random
 from multiprocessing import Pool, Value, Process
 
-term = 0
 listener = Process(target = listen_heartbeat)
 vote_lock = Value('i', 0)
 # -----------------------------------------------------------------------------|
 
 # -----------------------------------------------------------------------------|
 def start_election():
-    global leader
-    leader = ""
+    this_node.leader = ""
 
     members = hash_ring.ring
-
     payload = {
         "candidate": this_node,
-        "candidate_term": term+1
+        "candidate_term": this_node.term + 1
     }
 
     # Tally votes
@@ -155,20 +159,20 @@ def start_election():
 
     # :TODO Will need to remove inactive leader from the ring; else we would never reach consensus
     # True => This node is now leader;
-    if vote_count.value > (0.5 * len(members)):
+    if vote_count.value > (len(members) // 2):
         payload = {
             "leader": this_node,
-            "term": term
+            "term": this_node.term
         }
         for member in members:
             requests.post(member + "/new-leader", json = payload)
 
         # Update leader for middleman
-        requests.get(middleman + '/leader', json = {'leader': this_node.hostname})
+        requests.get(this_node.middleman + '/leader', json = {'leader': this_node.hostname})
     # False => no consensus => re-election
     else:
         time.sleep(random.randint(30, 100))
-        if not leader:
+        if not this_node.leader:
             start_election()
 # -----------------------------------------------------------------------------|
 
@@ -177,29 +181,28 @@ def start_election():
 # -----------------------------------------------------------------------------|
 @app.route('/vote-me')
 def vote():
-    global term
     listener.terminate()
     payload = request.get_json()
 
     with vote_lock.get_lock():
         candidate_term = payload['candidate_term']
-        if candidate_term <= term:
+        if candidate_term <= this_node.term:
             return "no"
         else:
-            term = candidate_term
+            this_node.term = candidate_term
             return "yes"
 
 @app.route('/new-leader')
 def make_leader():
-    global leader, term, listener
+    global listener
     payload = request.get_json()
-    leader, term = payload['leader'], payload['term']
+    this_node.leader, term = payload['leader'], payload['term']
 
     # Start listening
     listener = Process(target = listen_heartbeat)
     listener.start()
 
-    return f"All hail the new leader: {leader}"
+    return f"All hail the new leader: {this_node.leader}"
 
 @app.route('/is-alive')
 def is_alive():
@@ -207,10 +210,9 @@ def is_alive():
 # -----------------------------------------------------------------------------|
 
 
-
 # -----------------------------------------------------------------------------|
 def main():
-    web_server = Process(target = app.run)
+    web_server = Process(target = app.run, kwargs = {"port": int(sys.argv[1])})
 
     listener.start()
     web_server.start()
