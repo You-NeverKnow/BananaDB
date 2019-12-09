@@ -52,8 +52,13 @@ def init_self():
     global this_node
     init_json = request.get_json()
     hostname, middleman = init_json['name'], init_json['middleman']
+
     this_node = Node(hostname, hostname, middleman, 0)
     hash_ring.ring = [hostname]
+
+    # Tell middleman that you're leader
+    requests.post(this_node.middleman + '/leader', json = {'leader': this_node.hostname})
+
     return f"Initialized self:{hostname}"
 
 @app.route('/get')
@@ -168,7 +173,7 @@ def start_election():
             requests.post(member + "/new-leader", json = payload)
 
         # Update leader for middleman
-        requests.get(this_node.middleman + '/leader', json = {'leader': this_node.hostname})
+        requests.post(this_node.middleman + '/leader', json = {'leader': this_node.hostname})
     # False => no consensus => re-election
     else:
         time.sleep(random.randint(30, 100))
@@ -214,7 +219,7 @@ def is_alive():
 def main():
     web_server = Process(target = app.run, kwargs = {"port": int(sys.argv[1])})
 
-    listener.start()
+    # listener.start()
     web_server.start()
     web_server.join()
 # -----------------------------------------------------------------------------|
