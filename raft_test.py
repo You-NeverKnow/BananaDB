@@ -2,12 +2,13 @@ import ast
 import requests
 
 leader = "http://localhost:6000"
+middleman = "http://localhost:5000"
 
 # -----------------------------------------------------------------------------|
 # Tests
 # -----------------------------------------------------------------------------|
 def init_self():
-    r = requests.post(leader + "/init-self", json = { "name": leader })
+    r = requests.post(leader + "/init-self", json = { "name": leader, "middleman": middleman })
     assert r.text == f"Initialized self:{leader}"
 
 def get_nodes(url):
@@ -16,7 +17,7 @@ def get_nodes(url):
     print(r.text)
 
 def add_node_leader(url):
-    r = requests.post(leader + "/add-node-leader", json = { "name": url})
+    r = requests.post(leader + "/add-node-leader", json = { "name": url, "middleman": middleman})
     assert r.text == f"Initialized {url}"
 
 def insert():
@@ -36,7 +37,7 @@ def setup():
 
     url = "http://localhost:8000"
     add_node_leader(url)
-    
+
     url = "http://localhost:9000"
     add_node_leader(url)
 # -----------------------------------------------------------------------------|
@@ -44,7 +45,6 @@ def setup():
 # -----------------------------------------------------------------------------|
 def main():
     setup()
-
 # -----------------------------------------------------------------------------|
 
 

@@ -113,7 +113,7 @@ def listen_heartbeat():
 
     while True:
         time.sleep(random.randint(30, 100))
-        response = requests.get(leader + 'is-alive')
+        response = requests.get(leader + '/is-alive')
         if not response.ok:
             break
 
