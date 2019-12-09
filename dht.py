@@ -121,14 +121,14 @@ def insert_key():
 
 # -----------------------------------------------------------------------------|
 def listen_heartbeat():
-
     while True:
         print(f"{this_node.leader} is alive! Glory to Arztorzka!")
         timeout = random.randint(3, 10)
         print(f"Timing out in {timeout}s")
         time.sleep(timeout)
-        response = requests.get(this_node.leader + '/is-alive')
-        if not response.ok:
+        try:
+            requests.get(this_node.leader + '/is-alive')
+        except Exception:
             break
 
     print(f"Leader {this_node.leader} is dead! Long live the leader! => starting election")
@@ -145,6 +145,7 @@ vote_lock = Value('i', 0)
 
 # -----------------------------------------------------------------------------|
 def start_election():
+    old_leader = this_node.leader
     this_node.leader = ""
 
     members = hash_ring.ring
@@ -156,6 +157,8 @@ def start_election():
     # Tally votes
     vote_count = Value("i", 0)
     def add_vote(m):
+        if m == old_leader:
+            return
         response = requests.get(m + "/vote-me", json = payload)
         with vote_count.get_lock():
             vote_count.value += 0 if response.text == "no" else 1
@@ -169,11 +172,14 @@ def start_election():
     # True => This node is now leader;
     if vote_count.value > (len(members) // 2):
         payload = {
-            "leader": this_node,
+            "leader": this_node.hostname,
             "term": this_node.term
         }
         for member in members:
-            requests.post(member + "/new-leader", json = payload)
+            if member == old_leader:
+                continue
+            r = requests.post(member + "/new-leader", json = payload)
+            assert r == f"All hail the new leader: {this_node.hostname}"
 
         # Update leader for middleman
         requests.post(this_node.middleman + '/leader', json = {'leader': this_node.hostname})
