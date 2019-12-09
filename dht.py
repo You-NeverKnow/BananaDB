@@ -152,7 +152,9 @@ def start_election():
     p.map(add_vote, members)
     p.join()
 
-    # True => This node is leader;
+
+    # :TODO Will need to remove inactive leader from the ring; else we would never reach consensus
+    # True => This node is now leader;
     if vote_count.value > (0.5 * len(members)):
         payload = {
             "leader": this_node,
@@ -163,7 +165,7 @@ def start_election():
 
         # Update leader for middleman
         requests.get(middleman + '/leader', json = {'leader': this_node.hostname})
-    # False => re-election
+    # False => no consensus => re-election
     else:
         time.sleep(random.randint(30, 100))
         if not leader:
