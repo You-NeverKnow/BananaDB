@@ -49,9 +49,11 @@ def setup():
 # -----------------------------------------------------------------------------|
 def main():
     setup()
+    # url = "http://localhost:9000"
+    # r = requests.post(url + "/add-node-leader", json = { "name": leader, "middleman": middleman})
     # url = "http://localhost:7000"
     # get_nodes(url)
-    #
+    # #
     # url = "http://localhost:8000"
     # get_nodes(url)
     #

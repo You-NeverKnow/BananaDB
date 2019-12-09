@@ -122,9 +122,12 @@ def insert_key():
 # -----------------------------------------------------------------------------|
 def listen_heartbeat():
     while True:
+        print()
         print(f"{this_node.leader} is alive! Glory to Arztorzka!")
+        print(f"I am {this_node}")
+        print()
         timeout = random.randint(3, 10)
-        print(f"Timing out in {timeout}s")
+        print(f"Sending heartbeat in {timeout}s")
         time.sleep(timeout)
         try:
             requests.get(this_node.leader + '/is-alive')
@@ -166,8 +169,6 @@ def start_election():
         with vote_count.get_lock():
             requests_made.value += 1
             vote_count.value += 0 if response.text == "no" else 1
-
-        # debug
         print(f"vote_count.value = {vote_count.value}")
 
 
@@ -179,7 +180,7 @@ def start_election():
         continue
 
     # debug
-    print(f"Joined!")
+    print(f"Voting over! Time to tally.")
 
     # :TODO Will need to remove inactive leader from the ring; else we would never reach consensus
     # True => This node is now leader;
@@ -220,8 +221,8 @@ def vote():
             print(f"Refusing to vote {payload['candidate']}")
             return "no"
         else:
+            print(f"I am voting for {payload['candidate']} | {candidate_term} > {this_node.term}")
             this_node.term = candidate_term
-            print(f"I am voting for {payload['candidate']}")
             hash_ring.ring.remove(this_node.leader)
             return "yes"
 
