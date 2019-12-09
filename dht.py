@@ -150,7 +150,7 @@ def start_election():
 
     members = hash_ring.ring
     payload = {
-        "candidate": this_node,
+        "candidate": this_node.hostname,
         "candidate_term": this_node.term + 1
     }
 
@@ -163,10 +163,12 @@ def start_election():
         with vote_count.get_lock():
             vote_count.value += 0 if response.text == "no" else 1
 
-    p = Pool(5)
-    p.map(add_vote, members)
-    p.join()
+    pool = [Process(target = add_vote, args = (member,)) for member in members]
+    for p in pool:
+        p.start()
 
+    for p in pool:
+        p.join()
 
     # :TODO Will need to remove inactive leader from the ring; else we would never reach consensus
     # True => This node is now leader;
