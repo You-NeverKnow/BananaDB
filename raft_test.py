@@ -1,3 +1,4 @@
+import ast
 import requests
 
 leader = "http://localhost:6000"
@@ -11,11 +12,12 @@ def init_self():
 
 def get_nodes(url):
     r = requests.get(url + "/get-nodes")
+    assert type(ast.literal_eval(r.text)) == list
     print(r.text)
 
 def add_node_leader(url):
     r = requests.post(leader + "/add-node-leader", json = { "name": url})
-    print("Add response:::", r.text)
+    assert r.text == f"Initialized {url}"
 
 def insert():
     r = requests.post(leader + "/insert", json = { "key": "this-key", "value": "self-value"})
@@ -24,30 +26,25 @@ def insert():
 def get():
     r = requests.get(leader + "/get", params = { "key": "this-key"})
     assert r.text == "self-value"
-
+# -----------------------------------------------------------------------------|
 
 # -----------------------------------------------------------------------------|
-def main():
-    """
-    """
+def setup():
     init_self()
-    get_nodes(leader)
     url = "http://localhost:7000"
     add_node_leader(url)
 
     url = "http://localhost:8000"
     add_node_leader(url)
-
+    
     url = "http://localhost:9000"
     add_node_leader(url)
+# -----------------------------------------------------------------------------|
 
-    get_nodes(leader)
-    get_nodes("http://localhost:7000")
-    get_nodes("http://localhost:8000")
-    get_nodes("http://localhost:9000")
+# -----------------------------------------------------------------------------|
+def main():
+    setup()
 
-    insert()
-    get()
 # -----------------------------------------------------------------------------|
 
 
