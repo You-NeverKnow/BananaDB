@@ -89,9 +89,12 @@ def init():
     init_json = request.get_json()
     hostname, leader, middleman, term = init_json['name'], init_json['leader'], \
                                         init_json['middleman'], init_json['term']
+
     this_node = Node(hostname, leader, middleman, term)
     r = requests.get(leader + "/get-nodes")
     hash_ring.ring = r.json()
+    listener.start()
+
     return f"Initialized {hostname}"
 
 @app.route('/get-key')
@@ -121,7 +124,7 @@ def listen_heartbeat():
 
     while True:
         print(f"{this_node.leader} is alive! Glory to Arztorzka!")
-        timeout = random.randint(30, 100)
+        timeout = random.randint(3, 10)
         print(f"Timing out in {timeout}s")
         time.sleep(timeout)
         response = requests.get(this_node.leader + '/is-alive')
@@ -215,15 +218,5 @@ def is_alive():
 # -----------------------------------------------------------------------------|
 
 
-# -----------------------------------------------------------------------------|
-def main():
-    web_server = Process(target = app.run, kwargs = {"port": int(sys.argv[1])})
-
-    # listener.start()
-    web_server.start()
-    web_server.join()
-# -----------------------------------------------------------------------------|
-
-
 if __name__ == "__main__":
-    main()
+    app.run(port = int(sys.argv[1]))
